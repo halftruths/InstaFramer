@@ -1,0 +1,18 @@
+__pycache__/
+amazon_cache/
+amazon_cache_framed/
+research/
+
+# Standard Python
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+.venv/
+
+# IDEs and OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
