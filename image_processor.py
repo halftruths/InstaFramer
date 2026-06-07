@@ -18,12 +18,13 @@ def parse_color(color_str):
 def process_image(
     input_path: str,
     output_path: str = None,
-    border_inner_width: int = 0,
+    border_inner_width: float = 0.0,
     border_inner_color: str = "#ffffff",
-    border_outer_width: int = 0,
+    border_outer_width: float = 0.0,
     border_outer_color: str = "#000000",
     fit_instagram: bool = True,
     aspect_ratio: str = "4:5", # "1:1", "4:5", "1.91:1", or "original"
+    respect_original_dimensions: bool = False,
     preview: bool = False
 ):
     """
@@ -36,50 +37,99 @@ def process_image(
             if img.mode != 'RGB':
                 img = img.convert('RGB')
             
+            # Save original dimensions for calculations
+            orig_w, orig_h = img.width, img.height
+            longest_edge = max(orig_w, orig_h)
+            
+            if respect_original_dimensions:
+                inner_px = int(border_inner_width * longest_edge)
+                outer_px = int(border_outer_width * longest_edge)
+            else:
+                inner_px = int(border_inner_width)
+                outer_px = int(border_outer_width)
+            
             # Apply inner border
-            if border_inner_width > 0:
-                img = ImageOps.expand(img, border=border_inner_width, fill=parse_color(border_inner_color))
+            if inner_px > 0:
+                img = ImageOps.expand(img, border=inner_px, fill=parse_color(border_inner_color))
             
             # Apply outer border (which acts as a stylistic middle border if fit_instagram is True)
-            if border_outer_width > 0:
-                img = ImageOps.expand(img, border=border_outer_width, fill=parse_color(border_outer_color))
+            if outer_px > 0:
+                img = ImageOps.expand(img, border=outer_px, fill=parse_color(border_outer_color))
             
             # Fit to Instagram Canvas
-            if fit_instagram and aspect_ratio != "original":
-                target_w = IG_WIDTH
-                if aspect_ratio == "1:1":
-                    target_h = IG_WIDTH
-                elif aspect_ratio == "1.91:1":
-                    target_h = 566
-                else: # Default 4:5
-                    target_h = IG_MAX_HEIGHT
-                
-                # Downsample main image if it's larger than the target canvas
-                # We want the image to fit *inside* the canvas without being cropped
-                img.thumbnail((target_w, target_h), Image.Resampling.LANCZOS)
-                
-                # Create the background canvas (this will act as the final 'outermost' padding to fill IG dimension)
-                # Usually we'd use the outer border color, or a specific background color
-                canvas = Image.new('RGB', (target_w, target_h), parse_color(border_outer_color))
-                
-                # Paste the image in the center of the canvas
-                paste_x = (target_w - img.width) // 2
-                paste_y = (target_h - img.height) // 2
-                canvas.paste(img, (paste_x, paste_y))
-                
-                img = canvas
+            if respect_original_dimensions:
+                if fit_instagram and aspect_ratio != "original":
+                    # Determine target aspect ratio R
+                    if aspect_ratio == "1:1":
+                        R = 1.0
+                    elif aspect_ratio == "1.91:1":
+                        R = 1.91
+                    else: # Default 4:5
+                        R = 0.8
+                    
+                    img_aspect = img.width / img.height
+                    
+                    if img_aspect > R:
+                        # Image is wider than R, so pad height
+                        target_w = img.width
+                        target_h = int(img.width / R)
+                    else:
+                        # Image is taller than R, so pad width
+                        target_h = img.height
+                        target_w = int(img.height * R)
+                    
+                    # Create background canvas
+                    canvas = Image.new('RGB', (target_w, target_h), parse_color(border_outer_color))
+                    
+                    # Paste in the center
+                    paste_x = (target_w - img.width) // 2
+                    paste_y = (target_h - img.height) // 2
+                    canvas.paste(img, (paste_x, paste_y))
+                    
+                    img = canvas
+                else:
+                    # Keep original dimensions, no downsizing, and no fitting (or already original aspect ratio)
+                    pass
             else:
-                # Still downsample to max width 1080 to save space, keeping original aspect ratio
-                if img.width > IG_WIDTH:
-                    ratio = IG_WIDTH / img.width
-                    new_h = int(img.height * ratio)
-                    img = img.resize((IG_WIDTH, new_h), Image.Resampling.LANCZOS)
+                # Original downsampling logic
+                if fit_instagram and aspect_ratio != "original":
+                    target_w = IG_WIDTH
+                    if aspect_ratio == "1:1":
+                        target_h = IG_WIDTH
+                    elif aspect_ratio == "1.91:1":
+                        target_h = 566
+                    else: # Default 4:5
+                        target_h = IG_MAX_HEIGHT
+                    
+                    # Downsample main image if it's larger than the target canvas
+                    # We want the image to fit *inside* the canvas without being cropped
+                    img.thumbnail((target_w, target_h), Image.Resampling.LANCZOS)
+                    
+                    # Create the background canvas (this will act as the final 'outermost' padding to fill IG dimension)
+                    # Usually we'd use the outer border color, or a specific background color
+                    canvas = Image.new('RGB', (target_w, target_h), parse_color(border_outer_color))
+                    
+                    # Paste the image in the center of the canvas
+                    paste_x = (target_w - img.width) // 2
+                    paste_y = (target_h - img.height) // 2
+                    canvas.paste(img, (paste_x, paste_y))
+                    
+                    img = canvas
+                else:
+                    # Still downsample to max width 1080 to save space, keeping original aspect ratio
+                    if img.width > IG_WIDTH:
+                        ratio = IG_WIDTH / img.width
+                        new_h = int(img.height * ratio)
+                        img = img.resize((IG_WIDTH, new_h), Image.Resampling.LANCZOS)
 
             
             if preview:
-                # Return bytes for API
+                # Return bytes for API, downsampling for web UI performance
+                preview_img = img.copy()
+                if max(preview_img.width, preview_img.height) > 1080:
+                    preview_img.thumbnail((1080, 1080), Image.Resampling.LANCZOS)
                 buf = BytesIO()
-                img.save(buf, format="JPEG", quality=85)
+                preview_img.save(buf, format="JPEG", quality=85)
                 buf.seek(0)
                 return buf
             else:

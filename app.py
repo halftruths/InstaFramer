@@ -42,12 +42,13 @@ class FileOrFolderItem(BaseModel):
 class BatchRequest(BaseModel):
     input_folder: str
     output_folder: str
-    border_inner_width: int = 0
+    border_inner_width: float = 0.0
     border_inner_color: str = "#ffffff"
-    border_outer_width: int = 0
+    border_outer_width: float = 0.0
     border_outer_color: str = "#000000"
     fit_instagram: bool = True
     aspect_ratio: str = "4:5"
+    respect_original_dimensions: bool = False
 
 class AmazonRequest(BaseModel):
     url: str
@@ -104,12 +105,13 @@ async def list_files(path: str = None):
 @app.get("/api/preview")
 async def get_preview(
     image_path: str,
-    border_inner_width: int = 0,
+    border_inner_width: float = 0.0,
     border_inner_color: str = "#ffffff",
-    border_outer_width: int = 0,
+    border_outer_width: float = 0.0,
     border_outer_color: str = "#000000",
     fit_instagram: bool = True,
-    aspect_ratio: str = "4:5"
+    aspect_ratio: str = "4:5",
+    respect_original_dimensions: bool = False
 ):
     if not os.path.exists(image_path) or not os.path.isfile(image_path):
         raise HTTPException(status_code=404, detail="Image not found")
@@ -123,6 +125,7 @@ async def get_preview(
             border_outer_color=border_outer_color,
             fit_instagram=fit_instagram,
             aspect_ratio=aspect_ratio,
+            respect_original_dimensions=respect_original_dimensions,
             preview=True
         )
         
@@ -148,7 +151,8 @@ async def run_batch(request: BatchRequest):
             border_outer_width=request.border_outer_width,
             border_outer_color=request.border_outer_color,
             fit_instagram=request.fit_instagram,
-            aspect_ratio=request.aspect_ratio
+            aspect_ratio=request.aspect_ratio,
+            respect_original_dimensions=request.respect_original_dimensions
         )
         return {"status": "success", "processed_count": len(processed_files), "output_folder": request.output_folder}
     except Exception as e:

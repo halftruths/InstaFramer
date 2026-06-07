@@ -11,7 +11,7 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="stylesheet" href="/static/styles.css?v=1.0.1">
 </head>
 
 <body>
@@ -76,12 +76,20 @@
                         </select>
                     </div>
 
+                    <div class="checkbox-row">
+                        <label class="glass-checkbox-label">
+                            <input type="checkbox" id="respect-dimensions" checked>
+                            <span class="custom-checkbox"></span>
+                            Respect Original Dimensions
+                        </label>
+                    </div>
+
                     <div class="slider-group">
                         <div class="slider-header">
                             <label for="inner-border-width">Inner Border Width</label>
-                            <span id="inner-border-val" class="slider-val">0px</span>
+                            <span id="inner-border-val" class="slider-val">1.0%</span>
                         </div>
-                        <input type="range" id="inner-border-width" min="0" max="200" value="0" class="glass-slider">
+                        <input type="range" id="inner-border-width" min="0" max="20" value="1.0" step="0.1" class="glass-slider">
 
                         <div class="color-picker-row">
                             <label>Inner Color</label>
@@ -94,9 +102,9 @@
                     <div class="slider-group">
                         <div class="slider-header">
                             <label for="outer-border-width">Outer Border Width</label>
-                            <span id="outer-border-val" class="slider-val">0px</span>
+                            <span id="outer-border-val" class="slider-val">0.0%</span>
                         </div>
-                        <input type="range" id="outer-border-width" min="0" max="400" value="0" class="glass-slider">
+                        <input type="range" id="outer-border-width" min="0" max="20" value="0.0" step="0.1" class="glass-slider">
 
                         <div class="color-picker-row advanced-only">
                             <label>Outer/Canvas Color</label>
@@ -155,7 +163,7 @@
 
     </div>
 
-    <script src="/static/app.js"></script>
+    <script src="/static/app.js?v=1.0.1"></script>
 </body>
 
 </html>

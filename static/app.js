@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
         folderGalleryGroup: document.getElementById('folder-gallery-group'),
         folderImageList: document.getElementById('folder-image-list'),
         aspectRatio: document.getElementById('aspect-ratio'),
+        respectDimensions: document.getElementById('respect-dimensions'),
 
         innerBorderWidth: document.getElementById('inner-border-width'),
         innerBorderVal: document.getElementById('inner-border-val'),
@@ -67,7 +68,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Input Syncing (Slider <-> Text)
     const syncInputs = (slider, valDisplay, colorInput, hexInput) => {
         slider.addEventListener('input', (e) => {
-            valDisplay.textContent = `${e.target.value}px`;
+            const suffix = elements.respectDimensions.checked ? '%' : 'px';
+            valDisplay.textContent = `${e.target.value}${suffix}`;
             schedulePreviewUpdate();
         });
 
@@ -89,6 +91,37 @@ document.addEventListener('DOMContentLoaded', () => {
     syncInputs(elements.innerBorderWidth, elements.innerBorderVal, elements.innerBorderColor, elements.innerBorderHex);
     syncInputs(elements.outerBorderWidth, elements.outerBorderVal, elements.outerBorderColor, elements.outerBorderHex);
 
+    const updateSliderModes = () => {
+        const isPercent = elements.respectDimensions.checked;
+        if (isPercent) {
+            elements.innerBorderWidth.min = "0";
+            elements.innerBorderWidth.max = "20";
+            elements.innerBorderWidth.step = "0.1";
+            elements.innerBorderWidth.value = "1.0";
+            elements.innerBorderVal.textContent = "1.0%";
+
+            elements.outerBorderWidth.min = "0";
+            elements.outerBorderWidth.max = "20";
+            elements.outerBorderWidth.step = "0.1";
+            elements.outerBorderWidth.value = "0.0";
+            elements.outerBorderVal.textContent = "0.0%";
+        } else {
+            elements.innerBorderWidth.min = "0";
+            elements.innerBorderWidth.max = "200";
+            elements.innerBorderWidth.step = "1";
+            elements.innerBorderWidth.value = "20";
+            elements.innerBorderVal.textContent = "20px";
+
+            elements.outerBorderWidth.min = "0";
+            elements.outerBorderWidth.max = "400";
+            elements.outerBorderWidth.step = "1";
+            elements.outerBorderWidth.value = "0";
+            elements.outerBorderVal.textContent = "0px";
+        }
+        schedulePreviewUpdate();
+    };
+
+    elements.respectDimensions.addEventListener('change', updateSliderModes);
     elements.aspectRatio.addEventListener('change', schedulePreviewUpdate);
 
     // --- File Browser Modal ---
@@ -292,14 +325,19 @@ document.addEventListener('DOMContentLoaded', () => {
         elements.previewBadge.style.color = 'var(--accent-color)';
 
         try {
+            const isPercent = elements.respectDimensions.checked;
+            const innerVal = parseFloat(elements.innerBorderWidth.value);
+            const outerVal = parseFloat(elements.outerBorderWidth.value);
+
             const params = new URLSearchParams({
                 image_path: currentPreviewImage,
-                border_inner_width: elements.innerBorderWidth.value,
+                border_inner_width: isPercent ? (innerVal / 100).toString() : innerVal.toString(),
                 border_inner_color: elements.innerBorderColor.value,
-                border_outer_width: elements.outerBorderWidth.value,
+                border_outer_width: isPercent ? (outerVal / 100).toString() : outerVal.toString(),
                 border_outer_color: elements.outerBorderColor.value,
                 aspect_ratio: elements.aspectRatio.value,
-                fit_instagram: 'true'
+                fit_instagram: 'true',
+                respect_original_dimensions: isPercent.toString()
             });
 
             // We fetch the image as a blob
@@ -356,15 +394,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 outFolder = parts.join('/') + '/ig_framed';
             }
 
+            const isPercent = elements.respectDimensions.checked;
+            const innerVal = parseFloat(elements.innerBorderWidth.value);
+            const outerVal = parseFloat(elements.outerBorderWidth.value);
+
             const reqData = {
                 input_folder: isSourceDir ? currentSourcePath : currentSourcePath.substring(0, currentSourcePath.lastIndexOf('\\')), // Very basic backup
                 output_folder: outFolder,
-                border_inner_width: parseInt(elements.innerBorderWidth.value),
+                border_inner_width: isPercent ? innerVal / 100 : innerVal,
                 border_inner_color: elements.innerBorderColor.value,
-                border_outer_width: parseInt(elements.outerBorderWidth.value),
+                border_outer_width: isPercent ? outerVal / 100 : outerVal,
                 border_outer_color: elements.outerBorderColor.value,
                 aspect_ratio: elements.aspectRatio.value,
-                fit_instagram: true
+                fit_instagram: true,
+                respect_original_dimensions: isPercent
             };
 
             // If single file, we'll actually let the batch API process the parent folder but... wait

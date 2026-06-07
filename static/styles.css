@@ -651,3 +651,52 @@ input[type=color]::-webkit-color-swatch {
     background: var(--accent-glow);
     border-color: var(--accent-color);
 }
+
+/* Custom Glassmorphic Checkbox */
+.checkbox-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.glass-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-main);
+    cursor: pointer;
+    user-select: none;
+}
+
+.glass-checkbox-label input[type="checkbox"] {
+    display: none;
+}
+
+.custom-checkbox {
+    width: 18px;
+    height: 18px;
+    border: 1px solid var(--glass-border);
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.2);
+    position: relative;
+    transition: var(--transition-fast);
+}
+
+.glass-checkbox-label input[type="checkbox"]:checked + .custom-checkbox {
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 8px var(--accent-glow);
+}
+
+.glass-checkbox-label input[type="checkbox"]:checked + .custom-checkbox::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 2px;
+    width: 5px;
+    height: 9px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
